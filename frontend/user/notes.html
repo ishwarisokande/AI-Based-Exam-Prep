@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generated Notes - AI ExamPrep</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <div id="sidebar-placeholder"></div>
+
+        <main class="main-content">
+            <div id="topbar-placeholder"></div>
+
+            <div class="dashboard-content">
+                <div class="notes-container" style="display: grid; grid-template-columns: 300px 1fr; gap: 2rem;">
+                    <div class="materials-list" style="height: calc(100vh - 180px); overflow-y: auto;">
+                        <div class="materials-header">Select Topic</div>
+                        <div class="materials-items" id="topicList">
+                            <div style="padding: 1rem; text-align: center;">Loading materials...</div>
+                        </div>
+                    </div>
+
+                    <div id="noContentSelected" style="text-align: center; margin-top: 5rem;">
+                        <span style="font-size: 3rem;">📘</span>
+                        <h2>Your Knowledge Library</h2>
+                        <p>Select a topic from the left to view your AI-generated notes.</p>
+                    </div>
+
+                    <div class="card" id="notesContent" style="display: none;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                            <h2 id="noteTitle">Topic Title</h2>
+                            <div style="display: flex; gap: 0.75rem;">
+                                <button class="btn btn-outline btn-sm" onclick="window.print()">Download PDF</button>
+                            </div>
+                        </div>
+                        <h3>Simple Notes</h3>
+                        <div class="note-body" id="noteBody" style="line-height: 1.8; white-space: pre-wrap; color: var(--secondary-color);">
+                            <!-- Note content -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            components.load('sidebar-placeholder', '../components/sidebar.html', 'notes');
+            components.load('topbar-placeholder', '../components/topbar.html');
+            loadMaterials();
+        });
+
+        async function loadMaterials() {
+            const listEl = document.getElementById('topicList');
+            try {
+                const materials = await api.getMaterials();
+                if (materials.length === 0) {
+                    listEl.innerHTML = '<div style="padding: 1rem; text-align: center;">No materials yet.</div>';
+                    return;
+                }
+                listEl.innerHTML = materials.map(m => `
+                    <div class="material-item" id="topic-${m.id}" onclick="viewNotes(${m.id})">
+                        <div class="material-title">${escapeHtml(m.title)}</div>
+                        <div class="material-meta">
+                            <span>${escapeHtml(m.type)}</span>
+                        </div>
+                    </div>
+                `).join('');
+                const selectedId = new URLSearchParams(window.location.search).get('id');
+                if (selectedId && materials.some(material => String(material.id) === selectedId)) {
+                    viewNotes(Number(selectedId));
+                }
+            } catch (err) {
+                listEl.innerHTML = '<div style="padding: 1rem; text-align: center; color: #ef4444;">Error loading.</div>';
+            }
+        }
+
+        async function viewNotes(id) {
+            document.querySelectorAll('.material-item').forEach(el => el.classList.remove('active'));
+            const selected = document.getElementById(`topic-${id}`);
+            if (selected) selected.classList.add('active');
+
+            try {
+                const data = await api.getMaterialContent(id);
+                document.getElementById('noContentSelected').style.display = 'none';
+                document.getElementById('notesContent').style.display = 'block';
+                document.getElementById('noteTitle').textContent = data.title;
+                document.getElementById('noteBody').textContent = data.notes || 'No notes are available for this material.';
+            } catch (error) {
+                alert('Error loading notes: ' + error.message);
+            }
+        }
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[char]);
+        }
+    </script>
+</body>
+
+</html>

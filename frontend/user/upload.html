@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Content - AI ExamPrep</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <div id="sidebar-placeholder"></div>
+
+        <main class="main-content">
+            <div id="topbar-placeholder"></div>
+
+            <div class="dashboard-content">
+                <div class="two-col-grid">
+                    <div class="card">
+                        <div class="card-title">Select Source</div>
+                        <div class="upload-options">
+                            <button class="upload-opt active" onclick="switchUploadType('pdf', this)">
+                                <span class="opt-icon">📄</span> PDF File
+                            </button>
+                            <button class="upload-opt" onclick="switchUploadType('youtube', this)">
+                                <span class="opt-icon">🎥</span> YouTube URL
+                            </button>
+                            <button class="upload-opt" onclick="switchUploadType('image', this)">
+                                <span class="opt-icon">🖼️</span> Image/Notes
+                            </button>
+                        </div>
+
+                        <form id="uploadForm" style="margin-top: 2rem;">
+                            <input type="hidden" id="uploadType" name="type" value="pdf">
+                            <div id="pdf-input" class="form-group">
+                                <label>Upload PDF Document</label>
+                                <small>Scanned or handwritten pages need Gemini vision; printed text is extracted locally.</small>
+                                <div class="file-drop-area" id="dropArea">
+                                    <span>Drag & drop or click to browse</span>
+                                    <input type="file" id="fileInput" accept=".pdf">
+                                </div>
+                            </div>
+                            <div id="youtube-input" class="form-group" style="display: none;">
+                                <label>YouTube Video URL</label>
+                                <input type="url" id="youtubeUrl" placeholder="https://youtube.com/watch?v=...">
+                            </div>
+                            <div id="image-input" class="form-group" style="display: none;">
+                                <label>Upload Image</label>
+                                <small>Handwritten notes work best with Gemini vision. Configure GEMINI_API_KEY in backend/.env. Local Tesseract OCR is a best-effort fallback.</small>
+                                <div class="file-drop-area">
+                                    <span>Drag & drop or click to browse</span>
+                                    <input type="file" id="imageInput" accept="image/*">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Title of Material</label>
+                                <input type="text" id="materialTitle" placeholder="e.g. Physics Chapter 5">
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Difficulty</label>
+                                    <select id="difficulty">
+                                        <option value="EASY">Easy</option>
+                                        <option value="MEDIUM" selected>Medium</option>
+                                        <option value="HARD">Hard</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Questions</label>
+                                    <input type="number" id="numQuestions" value="5" min="3" max="15">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-block">Generate Smart Content</button>
+                        </form>
+                        <div id="uploadStatus" role="status" aria-live="polite" style="margin-top: 1rem;"></div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Recent Uploads</div>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="uploadHistory">
+                                    <tr>
+                                        <td colspan="3" style="text-align: center;">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            components.load('sidebar-placeholder', '../components/sidebar.html', 'upload');
+            components.load('topbar-placeholder', '../components/topbar.html');
+            loadHistory();
+        });
+
+        function switchUploadType(type, button = null) {
+            document.querySelectorAll('.upload-opt').forEach(el => el.classList.remove('active'));
+            if (button) {
+                button.classList.add('active');
+            }
+            document.getElementById('uploadType').value = type;
+
+            document.getElementById('pdf-input').style.display = type === 'pdf' ? 'block' : 'none';
+            document.getElementById('youtube-input').style.display = type === 'youtube' ? 'block' : 'none';
+            document.getElementById('image-input').style.display = type === 'image' ? 'block' : 'none';
+        }
+
+        async function loadHistory() {
+            try {
+                const materials = await api.getMaterials();
+                const tbody = document.getElementById('uploadHistory');
+                tbody.innerHTML = materials.length ? materials.map(m => `
+                    <tr>
+                        <td>${escapeHtml(m.title)}</td>
+                        <td>${m.type || 'UNKNOWN'}</td>
+                        <td><a href="notes.html?id=${m.id}" class="btn btn-outline btn-sm">View</a></td>
+                    </tr>
+                `).join('') : '<tr><td colspan="3" style="text-align:center;">No uploads found.</td></tr>';
+            } catch (err) {
+                document.getElementById('uploadHistory').innerHTML =
+                    '<tr><td colspan="3" style="text-align:center; color:#ef4444;">Could not load uploads.</td></tr>';
+                console.error(err);
+            }
+        }
+
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const statusEl = document.getElementById('uploadStatus');
+            btn.disabled = true;
+            btn.innerText = 'Processing...';
+            statusEl.textContent = '';
+            statusEl.style.color = '';
+
+            const uploadType = document.getElementById('uploadType').value;
+            const formData = new FormData();
+            formData.append('title', document.getElementById('materialTitle').value);
+            formData.append('type', uploadType);
+            formData.append('difficulty', document.getElementById('difficulty').value);
+            formData.append('questions', document.getElementById('numQuestions').value);
+
+            if (uploadType === 'youtube') {
+                const url = document.getElementById('youtubeUrl').value.trim();
+                if (!url) {
+                    alert('Please enter a YouTube URL.');
+                    btn.disabled = false;
+                    btn.innerText = 'Generate Smart Content';
+                    return;
+                }
+                formData.append('youtubeUrl', url);
+            } else if (uploadType === 'image') {
+                const imageFile = document.getElementById('imageInput').files[0];
+                if (!imageFile) {
+                    alert('Please upload an image file.');
+                    btn.disabled = false;
+                    btn.innerText = 'Generate Smart Content';
+                    return;
+                }
+                formData.append('file', imageFile);
+            } else {
+                const file = document.getElementById('fileInput').files[0];
+                if (!file) {
+                    alert('Please upload a PDF file.');
+                    btn.disabled = false;
+                    btn.innerText = 'Generate Smart Content';
+                    return;
+                }
+                formData.append('file', file);
+            }
+
+            try {
+                const result = await api.uploadMaterial(formData);
+                const links = document.createElement('span');
+                links.textContent = `Done — ${result.mcqs.length} quiz questions and notes are ready. `;
+                const notesLink = document.createElement('a');
+                notesLink.href = `notes.html?id=${result.materialId}`;
+                notesLink.textContent = 'Read notes';
+                const quizLink = document.createElement('a');
+                quizLink.href = `quiz.html?materialId=${result.materialId}`;
+                quizLink.textContent = 'Take quiz';
+                links.append(notesLink, document.createTextNode(' · '), quizLink);
+                statusEl.replaceChildren(links);
+                if (result.generationWarnings && result.generationWarnings.length) {
+                    const warnings = document.createElement('ul');
+                    result.generationWarnings.forEach(warning => {
+                        const item = document.createElement('li');
+                        item.textContent = warning;
+                        warnings.appendChild(item);
+                    });
+                    statusEl.appendChild(warnings);
+                    statusEl.style.color = '#92400e';
+                } else {
+                    statusEl.style.color = '#047857';
+                }
+                if (!result.aiGenerationAvailable) {
+                    const setupHint = document.createElement('div');
+                    setupHint.textContent = 'Configure GEMINI_API_KEY in backend/.env for accurate handwriting transcription and AI-generated notes and quizzes.';
+                    statusEl.appendChild(setupHint);
+                    statusEl.style.color = '#92400e';
+                }
+                await loadHistory();
+            } catch (err) {
+                statusEl.textContent = err.message || 'Could not process this material.';
+                statusEl.style.color = '#b91c1c';
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Generate Smart Content';
+            }
+        });
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[char]);
+        }
+    </script>
+</body>
+
+</html>

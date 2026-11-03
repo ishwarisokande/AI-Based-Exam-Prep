@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Logs - AI ExamPrep Admin</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <div id="sidebar-placeholder"></div>
+        <main class="main-content">
+            <div id="topbar-placeholder"></div>
+            <div class="dashboard-content">
+                <div class="card">
+                    <div class="card-title">Activity Audit Logs</div>
+                    <p>Monitoring system events and processing history.</p>
+
+                    <div class="log-container"
+                        style="margin-top: 1.5rem; background: #111827; color: #10b981; padding: 1.5rem; border-radius: var(--radius); font-family: monospace; height: 400px; overflow-y: auto;"
+                        id="logFeed">
+                        <div style="color: #6b7280;">[SYSTEM] Initializing audit stream...</div>
+                        <div style="color: #6b7280;">[SYSTEM] Authentication successful. Admin access granted.</div>
+                    </div>
+
+                    <button class="btn btn-outline" style="margin-top: 1rem;" onclick="loadLogs()">Refresh Logs</button>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            components.load('sidebar-placeholder', '../components/admin_sidebar.html', 'logs');
+            components.load('topbar-placeholder', '../components/topbar.html');
+            loadLogs();
+        });
+
+        async function loadLogs() {
+            try {
+                const logs = await api.getSystemLogs();
+                const feed = document.getElementById('logFeed');
+
+                logs.forEach(log => {
+                    const entry = document.createElement('div');
+                    entry.style.marginTop = '0.5rem';
+                    entry.innerHTML = `<span style="color: #6b7280;">[${log.time}]</span> <span style="color: #e5e7eb;">${log.event}</span>`;
+                    feed.appendChild(entry);
+                });
+
+                feed.scrollTop = feed.scrollHeight;
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        }
+    </script>
+</body>
+
+</html>

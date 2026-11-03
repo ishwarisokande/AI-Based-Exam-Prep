@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCQ Database - AI ExamPrep Admin</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <div id="sidebar-placeholder"></div>
+        <main class="main-content">
+            <div id="topbar-placeholder"></div>
+            <div class="dashboard-content">
+                <div class="card">
+                    <div class="card-title">Generated Questions Repository</div>
+                    <p>Audit and manage all AI-generated MCQs in the system.</p>
+
+                    <div style="margin-top: 1.5rem; overflow-x: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Question</th>
+                                    <th>Topic</th>
+                                    <th>Difficulty</th>
+                                    <th>Correct</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mcqTableBody">
+                                <tr>
+                                    <td colspan="5" style="text-align:center;">Loading questions...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            components.load('sidebar-placeholder', '../components/admin_sidebar.html', 'mcqs');
+            components.load('topbar-placeholder', '../components/topbar.html');
+            loadMCQs();
+        });
+
+        async function loadMCQs() {
+            try {
+                const mcqs = await api.getAllMCQs();
+                const tbody = document.getElementById('mcqTableBody');
+
+                if (mcqs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No questions found.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = mcqs.map(q => `
+                    <tr>
+                        <td title="${q.question}">${q.question.substring(0, 60)}...</td>
+                        <td>${q.material ? q.material.title : 'N/A'}</td>
+                        <td><span class="badge badge-${q.difficulty.toLowerCase()}">${q.difficulty}</span></td>
+                        <td>${q.correctAnswer}</td>
+                        <td>
+                            <button class="btn btn-outline" style="padding: 0.25rem 0.5rem; color: #ef4444;" onclick="deleteMCQ(${q.id})">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        }
+
+        async function deleteMCQ(id) {
+            if (!confirm('Are you sure you want to delete this question?')) return;
+            try {
+                await api.deleteMCQ(id);
+                loadMCQs();
+            } catch (err) {
+                alert('Failed to delete question');
+            }
+        }
+    </script>
+</body>
+
+</html>

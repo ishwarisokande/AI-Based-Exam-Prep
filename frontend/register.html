@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - AI ExamPrep</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div id="navbar-placeholder"></div>
+
+    <main class="auth-container">
+        <div class="auth-card">
+            <h2>Create an Account</h2>
+            <p>Start generating smart notes and MCQs today.</p>
+
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" required placeholder="Enter your full name">
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" required placeholder="Enter your email">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required placeholder="Create a password"
+                        oninput="checkPasswordStrength()">
+                    <div class="password-strength" id="password-text">Password strength</div>
+                    <div class="password-strength-bar">
+                        <div class="password-strength-fill" id="password-fill"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm-password">Confirm Password</label>
+                    <input type="password" id="confirm-password" name="confirm-password" required
+                        placeholder="Confirm your password">
+                </div>
+                <div id="error-message" style="color: #ef4444; margin-bottom: 1rem; font-size: 0.9rem; display: none;">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block btn-large">Register</button>
+            </form>
+
+            <div class="auth-links">
+                <p>Already have an account? <a href="login.html">Login here</a></p>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/components.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            components.load('navbar-placeholder', 'components/navbar.html', 'register');
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const errorDiv = document.getElementById('error-message');
+
+            if (password !== confirmPassword) {
+                errorDiv.innerText = "Passwords do not match";
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                errorDiv.style.display = 'none';
+                const user = await api.register(name, email, password);
+                if (user.role === 'ADMIN') {
+                    window.location.href = 'admin/dashboard.html';
+                } else {
+                    window.location.href = 'user/dashboard.html';
+                }
+            } catch (error) {
+                errorDiv.innerText = error.message;
+                errorDiv.style.display = 'block';
+            }
+        });
+
+        function checkPasswordStrength() {
+            const password = document.getElementById('password').value;
+            const fill = document.getElementById('password-fill');
+            const text = document.getElementById('password-text');
+
+            if (password.length === 0) {
+                fill.style.width = '0%';
+                text.innerText = 'Password strength';
+            } else if (password.length < 6) {
+                fill.style.width = '33%';
+                fill.style.backgroundColor = '#ef4444'; // Red
+                text.innerText = 'Weak';
+                text.style.color = '#ef4444';
+            } else if (password.length < 10) {
+                fill.style.width = '66%';
+                fill.style.backgroundColor = '#f59e0b'; // Yellow
+                text.innerText = 'Medium';
+                text.style.color = '#f59e0b';
+            } else {
+                fill.style.width = '100%';
+                fill.style.backgroundColor = '#10b981'; // Green
+                text.innerText = 'Strong';
+                text.style.color = '#10b981';
+            }
+        }
+    </script>
+</body>
+
+</html>

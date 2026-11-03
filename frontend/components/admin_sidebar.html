@@ -1,0 +1,35 @@
+<aside class="sidebar admin-sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <a href="dashboard.html" class="sidebar-logo">AI Admin</a>
+        <button class="mobile-toggle" onclick="toggleSidebar()">✕</button>
+    </div>
+    <nav class="sidebar-nav">
+        <a href="dashboard.html" class="nav-item" id="nav-dashboard">
+            <span class="nav-icon">📊</span> Admin Dashboard
+        </a>
+        <a href="users.html" class="nav-item" id="nav-users">
+            <span class="nav-icon">👥</span> User Management
+        </a>
+        <a href="content.html" class="nav-item" id="nav-content">
+            <span class="nav-icon">📚</span> Content Manage
+        </a>
+        <a href="mcqs.html" class="nav-item" id="nav-mcqs">
+            <span class="nav-icon">❓</span> MCQ Database
+        </a>
+        <a href="analytics.html" class="nav-item" id="nav-analytics">
+            <span class="nav-icon">📈</span> Analytics
+        </a>
+        <a href="logs.html" class="nav-item" id="nav-logs">
+            <span class="nav-icon">🧾</span> System Logs
+        </a>
+        <hr style="margin: 1rem 0; border: none; border-top: 1px solid rgba(255,255,255,0.1);">
+        <a href="../dashboard.html" class="nav-item">
+            <span class="nav-icon">👤</span> Switch to User View
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <a href="#" onclick="api.logout()" class="nav-item">
+            <span class="nav-icon">🚪</span> Logout
+        </a>
+    </div>
+</aside>

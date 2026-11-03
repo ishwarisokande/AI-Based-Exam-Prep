@@ -1,0 +1,21 @@
+# Python virtual environments
+backend/.venv/
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Django
+db.sqlite3
+media/
+staticfiles/
+
+# Secrets
+.env
+.env.*
+
+# Node dependencies
+node_modules/

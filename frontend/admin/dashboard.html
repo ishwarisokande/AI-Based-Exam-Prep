@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - AI ExamPrep</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .admin-sidebar {
+            background: #111827;
+            color: #fff;
+        }
+
+        .admin-sidebar .nav-item {
+            color: #9ca3af;
+        }
+
+        .admin-sidebar .nav-item:hover,
+        .admin-sidebar .nav-item.active {
+            background: #1f2937;
+            color: #fff;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <div id="sidebar-placeholder"></div>
+
+        <main class="main-content">
+            <div id="topbar-placeholder"></div>
+
+            <div class="dashboard-content">
+                <div class="stats-grid">
+                    <div class="card stat-card">
+                        <div class="stat-value" id="total-users">0</div>
+                        <div class="stat-label">Total Users</div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-value" id="total-materials">0</div>
+                        <div class="stat-label">Materials Uploaded</div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-value" id="total-quizzes">0</div>
+                        <div class="stat-label">Quizzes Taken</div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-value" id="active-users">0</div>
+                        <div class="stat-label">Active Today</div>
+                    </div>
+                </div>
+
+                <div class="two-col-grid">
+                    <div class="card">
+                        <div class="card-title">Daily Usage Trend</div>
+                        <canvas id="usageChart" height="200"></canvas>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Content Distribution</div>
+                        <canvas id="contentChart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check if admin
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user || user.role !== 'ADMIN') {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            components.load('sidebar-placeholder', '../components/admin_sidebar.html', 'dashboard');
+            components.load('topbar-placeholder', '../components/topbar.html');
+
+            loadStats();
+        });
+
+        async function loadStats() {
+            try {
+                const stats = await api.getAdminStats();
+                document.getElementById('total-users').innerText = stats.totalUsers;
+                document.getElementById('total-materials').innerText = stats.totalMaterials;
+                document.getElementById('total-quizzes').innerText = stats.totalQuizzes;
+                document.getElementById('active-users').innerText = stats.activeUsersToday;
+
+                initCharts();
+            } catch (err) {
+                console.error('Failed to load admin stats:', err);
+            }
+        }
+
+        function initCharts() {
+            const usageCtx = document.getElementById('usageChart').getContext('2d');
+            new Chart(usageCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Active Users',
+                        data: [12, 19, 15, 22, 30, 25, 35],
+                        borderColor: '#4f46e5',
+                        tension: 0.4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            const contentCtx = document.getElementById('contentChart').getContext('2d');
+            new Chart(contentCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['PDF', 'YouTube', 'Image'],
+                    datasets: [{
+                        data: [60, 30, 10],
+                        backgroundColor: ['#4f46e5', '#10b981', '#f59e0b']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics - AI ExamPrep</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <div id="sidebar-placeholder"></div>
+
+        <main class="main-content">
+            <div id="topbar-placeholder"></div>
+
+            <div class="dashboard-content">
+                <div class="card" style="margin-bottom: 2rem; border-left: 4px solid var(--primary-color);">
+                    <div class="card-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.5rem;">🧠</span> Performance Insights
+                    </div>
+                    <div style="line-height: 1.8;" id="aiInsightsContainer">
+                        <p>Analyzing your quiz patterns...</p>
+                    </div>
+                </div>
+
+                <div class="two-col-grid" style="grid-template-columns: 1fr 1fr;">
+                    <div class="card">
+                        <div class="card-title">Score Progression</div>
+                        <div class="chart-container">
+                            <canvas id="scoreChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Topic Accuracy</div>
+                        <div class="chart-container">
+                            <canvas id="topicChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Performance by Difficulty</div>
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="difficultyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script src="../js/dashboard.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            components.load('sidebar-placeholder', '../components/sidebar.html', 'analytics');
+            components.load('topbar-placeholder', '../components/topbar.html');
+
+            try {
+                const history = await api.getQuizHistory();
+                initCharts(history);
+                updateInsights();
+            } catch (err) {
+                console.error('Error loading analytics:', err);
+            }
+        });
+
+        function initCharts(history) {
+            const scoreCtx = document.getElementById('scoreChart');
+            if (scoreCtx && history.length > 0) {
+                const labels = history.slice(-10).map((h, i) => `Quiz ${history.length - history.slice(-10).length + i + 1}`);
+                const data = history.slice(-10).map(h => h.score);
+
+                new Chart(scoreCtx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Score (%)',
+                            data: data,
+                            borderColor: '#4f46e5',
+                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            pointBackgroundColor: '#4f46e5',
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, max: 100 } }
+                    }
+                });
+            }
+
+            const avgScore = history.reduce((acc, curr) => acc + curr.score, 0) / (history.length || 1);
+            const topicCtx = document.getElementById('topicChart');
+            if (topicCtx) {
+                new Chart(topicCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Overall'],
+                        datasets: [{
+                            label: 'Average Accuracy (%)',
+                            data: [Math.round(avgScore)],
+                            backgroundColor: ['#10b981'],
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, max: 100 } }
+                    }
+                });
+            }
+
+            const diffCtx = document.getElementById('difficultyChart');
+            if (diffCtx) {
+                new Chart(diffCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Complete', 'Remaining'],
+                        datasets: [{
+                            data: [history.length, Math.max(0, 10 - history.length)],
+                            backgroundColor: ['#10b981', '#f3f4f6'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: { legend: { position: 'right' } }
+                    }
+                });
+            }
+        }
+
+        async function updateInsights() {
+            const container = document.getElementById('aiInsightsContainer');
+            try {
+                const data = await api.getPerformanceAnalytics();
+
+                let html = `<p>${data.geminiSummary}</p>`;
+
+                if (data.weakAreas && data.weakAreas.length > 0) {
+                    html += `<div style="margin-top: 1.5rem; font-weight: 600; color: #991b1b;">Focus Areas:</div>
+                    <ul style="margin-left: 1.5rem; margin-top: 0.5rem; color: var(--secondary-color);">`;
+                    data.weakAreas.forEach(area => {
+                        html += `<li><strong>${area.topic}:</strong> ${Math.round(area.averageScore)}% accuracy - ${area.suggestion}</li>`;
+                    });
+                    html += `</ul>`;
+                }
+
+                container.innerHTML = html;
+            } catch (err) {
+                console.error('Failed to load AI insights:', err);
+                container.innerHTML = '<p>Take more quizzes to generate AI insights!</p>';
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Practice MCQ - AI ExamPrep</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <div id="sidebar-placeholder"></div>
+
+        <main class="main-content">
+            <div id="topbar-placeholder"></div>
+
+            <div class="dashboard-content">
+                <div class="notes-container" style="display: grid; grid-template-columns: 300px 1fr; gap: 2rem;">
+                    <div class="materials-list" style="height: calc(100vh - 180px); overflow-y: auto;">
+                        <div class="materials-header">Select Topic to Practice</div>
+                        <div class="materials-items" id="practiceTopicList">
+                            <div style="padding: 1rem; text-align: center;">Loading topics...</div>
+                        </div>
+                    </div>
+
+                    <div id="noTopicSelected" style="text-align: center; margin-top: 5rem;">
+                        <span style="font-size: 3rem;">🎯</span>
+                        <h2>Ready to practice?</h2>
+                        <p>Select a topic from the left to start your MCQ session.</p>
+                    </div>
+
+                    <div class="question-card" id="questionContainer" style="display: none;">
+                        <div class="question-header">
+                            <span id="questionCount" style="font-weight: 500; color: var(--secondary-color);">Question 0
+                                of 0</span>
+                            <span id="diffBadge" class="difficulty-badge medium">MEDIUM</span>
+                        </div>
+
+                        <div class="question-text" id="questionText">
+                            Loading question...
+                        </div>
+
+                        <div class="options-list" id="optionsList">
+                            <!-- Options go here -->
+                        </div>
+
+                        <div class="explanation-box" id="explanation"
+                            style="display: none; background: rgba(16, 185, 129, 0.05); color: #065f46; border: 1px solid rgba(16, 185, 129, 0.2);">
+                            <strong>Correct Answer!</strong> The value matches our records. Keep going!
+                        </div>
+
+                        <div class="practice-footer">
+                            <button class="btn btn-outline" id="checkBtn" onclick="checkAnswer()">Check Answer</button>
+                            <button class="btn btn-primary" id="nextBtn" style="display: none;"
+                                onclick="nextQuestion()">Next Question ➔</button>
+                        </div>
+
+                        <div class="progress-container">
+                            <div class="progress-bar" id="progressBar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script src="../js/dashboard.js"></script>
+    <script>
+        let currentQuestions = [];
+        let currentIndex = 0;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            components.load('sidebar-placeholder', '../components/sidebar.html', 'practice');
+            components.load('topbar-placeholder', '../components/topbar.html');
+            loadTopicList();
+        });
+
+        async function loadTopicList() {
+            const listEl = document.getElementById('practiceTopicList');
+            try {
+                const materials = await api.getMaterials();
+                if (materials.length === 0) {
+                    listEl.innerHTML = '<div style="padding: 1rem; text-align: center;">No materials found.</div>';
+                    return;
+                }
+                listEl.innerHTML = materials.map(m => `
+                    <div class="material-item" id="topic-${m.id}" onclick="startPractice(${m.id})">
+                        <div class="material-title">${m.title}</div>
+                        <div class="material-meta">
+                            <span>${m.type}</span>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                listEl.innerHTML = '<div style="padding: 1rem; text-align: center; color: #ef4444;">Error loading topics.</div>';
+            }
+        }
+
+        async function startPractice(id) {
+            document.querySelectorAll('.material-item').forEach(el => el.classList.remove('active'));
+            document.getElementById(`topic-${id}`).classList.add('active');
+
+            document.getElementById('noTopicSelected').style.display = 'none';
+            document.getElementById('questionContainer').style.display = 'block';
+
+            try {
+                const data = await api.getMaterialContent(id);
+                currentQuestions = data.mcqs;
+                currentIndex = 0;
+                displayQuestion();
+            } catch (error) {
+                alert('Error loading MCQs: ' + error.message);
+            }
+        }
+
+        function displayQuestion() {
+            if (currentQuestions.length === 0) {
+                document.getElementById('questionText').innerText = "No MCQs generated for this material.";
+                return;
+            }
+
+            const q = currentQuestions[currentIndex];
+            document.getElementById('questionCount').innerText = `Question ${currentIndex + 1} of ${currentQuestions.length}`;
+            document.getElementById('diffBadge').innerText = q.difficulty;
+            document.getElementById('questionText').innerText = q.question;
+
+            const optionsHtml = [
+                { key: 'A', text: q.optionA },
+                { key: 'B', text: q.optionB },
+                { key: 'C', text: q.optionC },
+                { key: 'D', text: q.optionD }
+            ].map(opt => `
+                <label class="option-item" id="label-${opt.key}">
+                    <input type="radio" name="temp_q" value="${opt.key}">
+                    ${escapeHtml(opt.text)}
+                </label>
+            `).join('');
+
+            document.getElementById('optionsList').innerHTML = optionsHtml;
+            document.getElementById('explanation').style.display = 'none';
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('checkBtn').style.display = 'block';
+
+            const progress = ((currentIndex) / currentQuestions.length) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+        }
+
+        function checkAnswer() {
+            const selected = document.querySelector('input[name="temp_q"]:checked');
+            if (!selected) return alert('Please select an answer!');
+
+            const q = currentQuestions[currentIndex];
+            const correctKey = q.correctAnswer;
+            const selectedKey = selected.value;
+
+            document.querySelectorAll('.option-item').forEach(el => {
+                el.classList.remove('correct', 'incorrect');
+                const radio = el.querySelector('input');
+                if (radio.value === correctKey) {
+                    el.classList.add('correct');
+                } else if (radio.value === selectedKey) {
+                    el.classList.add('incorrect');
+                }
+            });
+
+            document.getElementById('explanation').style.display = 'block';
+            if (selectedKey === correctKey) {
+                document.getElementById('explanation').innerHTML = "<strong>Correct!</strong> Well done.";
+            } else {
+                document.getElementById('explanation').innerHTML = `<strong>Incorrect.</strong> The correct answer was option ${correctKey}.`;
+                document.getElementById('explanation').style.background = 'rgba(239, 68, 68, 0.05)';
+                document.getElementById('explanation').style.color = '#991b1b';
+                document.getElementById('explanation').style.borderColor = 'rgba(239, 68, 68, 0.2)';
+            }
+
+            document.getElementById('checkBtn').style.display = 'none';
+            document.getElementById('nextBtn').style.display = 'block';
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            if (currentIndex < currentQuestions.length) {
+                displayQuestion();
+            } else {
+                document.getElementById('progressBar').style.width = '100%';
+                alert('Practice finished! Try Quiz Mode for scoring.');
+                currentIndex = 0;
+                displayQuestion();
+            }
+        }
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[char]);
+        }
+    </script>
+</body>
+
+</html>

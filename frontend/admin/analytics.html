@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Analytics - AI ExamPrep Admin</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <div id="sidebar-placeholder"></div>
+        <main class="main-content">
+            <div id="topbar-placeholder"></div>
+            <div class="dashboard-content">
+                <div class="card">
+                    <div class="card-title">Global Activity Trend</div>
+                    <p>Real-time system-wide statistics across all users.</p>
+
+                    <div class="stats-grid" style="margin-top: 1.5rem;">
+                        <div class="stat-card">
+                            <div class="stat-label">Total Users</div>
+                            <div class="stat-value" id="totalUsers">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Total Uploads</div>
+                            <div class="stat-value" id="totalUploads">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Generated MCQs</div>
+                            <div class="stat-value" id="totalMCQs">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Total Quizzes</div>
+                            <div class="stat-value" id="totalQuizzes">-</div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-top: 2rem;">
+                        <div class="card-title">System Composition</div>
+                        <div style="height: 300px;">
+                            <canvas id="compositionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            components.load('sidebar-placeholder', '../components/admin_sidebar.html', 'analytics');
+            components.load('topbar-placeholder', '../components/topbar.html');
+            loadAnalytics();
+        });
+
+        async function loadAnalytics() {
+            try {
+                const data = await api.getGlobalAnalytics();
+
+                document.getElementById('totalUsers').innerText = data.totalUsers;
+                document.getElementById('totalUploads').innerText = data.totalUploads;
+                document.getElementById('totalMCQs').innerText = data.totalMCQs;
+                document.getElementById('totalQuizzes').innerText = data.totalQuizzes;
+
+                const ctx = document.getElementById('compositionChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Uploads', 'MCQs', 'Quizzes'],
+                        datasets: [{
+                            label: 'System Totals',
+                            data: [data.totalUploads, data.totalMCQs, data.totalQuizzes],
+                            backgroundColor: ['#4f46e5', '#10b981', '#f59e0b'],
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        }
+    </script>
+</body>
+
+</html>

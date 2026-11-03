@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - AI ExamPrep</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <div id="sidebar-placeholder"></div>
+
+        <main class="main-content">
+            <div id="topbar-placeholder"></div>
+
+            <div class="dashboard-content">
+                <div class="two-col-grid">
+                    <div class="card">
+                        <div class="card-title">Personal Information</div>
+                        <form>
+                            <div class="form-group"
+                                style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem;">
+                                <div class="avatar" style="width: 80px; height: 80px; font-size: 2rem;">--</div>
+                                <button type="button" class="btn btn-outline">Change Avatar</button>
+                            </div>
+                            <div class="form-group">
+                                <label for="profileName">Full Name</label>
+                                <input type="text" id="profileName" value="">
+                            </div>
+                            <div class="form-group">
+                                <label for="profileEmail">Email Address</label>
+                                <input type="email" id="profileEmail" value="" readonly
+                                    style="background: #f9fafb; cursor: not-allowed;">
+                            </div>
+                            <button type="button" class="btn btn-primary">Save Changes</button>
+                        </form>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                        <div class="card">
+                            <div class="card-title">Security & Password</div>
+                            <form>
+                                <div class="form-group">
+                                    <label for="currentPass">Current Password</label>
+                                    <input type="password" id="currentPass">
+                                </div>
+                                <div class="form-group">
+                                    <label for="newPass">New Password</label>
+                                    <input type="password" id="newPass">
+                                </div>
+                                <button type="button" class="btn btn-primary">Update Password</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            components.load('sidebar-placeholder', '../components/sidebar.html', 'profile');
+            components.load('topbar-placeholder', '../components/topbar.html');
+
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (user) {
+                document.getElementById('profileName').value = user.name;
+                document.getElementById('profileEmail').value = user.email;
+            }
+        });
+    </script>
+</body>
+
+</html>

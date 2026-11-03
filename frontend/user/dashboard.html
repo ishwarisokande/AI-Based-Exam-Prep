@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard - AI ExamPrep</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <div id="sidebar-placeholder"></div>
+
+        <main class="main-content">
+            <div id="topbar-placeholder"></div>
+
+            <div class="dashboard-content">
+                <div class="stats-grid" id="stats-grid">
+                    <div class="card stat-card">
+                        <div class="stat-value" id="stat-pdfs">0</div>
+                        <div class="stat-label">PDFs Uploaded</div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-value" id="stat-mcqs">0</div>
+                        <div class="stat-label">MCQs Generated</div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-value" id="stat-quizzes">0</div>
+                        <div class="stat-label">Quiz Attempts</div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-value" id="stat-avg">0%</div>
+                        <div class="stat-label">Average Score</div>
+                    </div>
+                </div>
+
+                <div class="two-col-grid">
+                    <div class="card">
+                        <div class="card-title">Recent Activity</div>
+                        <ul class="activity-list" id="recentActivity">
+                            <li class="activity-item">Loading activity...</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Performance Overview</div>
+                        <div style="height: 300px;">
+                            <canvas id="performanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script src="../js/dashboard.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            components.load('sidebar-placeholder', '../components/sidebar.html', 'dashboard');
+            components.load('topbar-placeholder', '../components/topbar.html');
+
+            dashboard.init();
+        });
+    </script>
+</body>
+
+</html>

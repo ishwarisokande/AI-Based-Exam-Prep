@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Mode - AI ExamPrep</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <div id="sidebar-placeholder"></div>
+
+        <main class="main-content">
+            <div id="topbar-placeholder"></div>
+
+            <div class="dashboard-content">
+                <div id="setup-screen" style="max-width: 600px; margin: 5rem auto; text-align: center;">
+                    <span style="font-size: 4rem;">🧪</span>
+                    <h2>Start a New Quiz</h2>
+                    <p>Select a topic to test your knowledge.</p>
+                    <div class="form-group" style="margin-top: 2rem;">
+                        <select id="topicSelector"
+                            style="width: 100%; padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius);">
+                            <option value="">Loading topics...</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary btn-block btn-large" style="margin-top: 1rem;"
+                        onclick="startQuiz()">Start Quiz Now</button>
+                </div>
+
+                <div class="practice-container" id="quiz-container" style="display: none;">
+                    <div class="quiz-header">
+                        <div>
+                            <span id="quiz-progress-text" style="font-weight: 600; font-size: 1.1rem;">Question 0 of
+                                0</span>
+                            <div style="font-size: 0.85rem; color: var(--secondary-color);">Pass Score: 60%</div>
+                        </div>
+                        <div class="timer" id="quiz-timer">00:00</div>
+                    </div>
+
+                    <div class="question-card" id="question-card">
+                        <div class="question-text" id="question-text">
+                            Loading...
+                        </div>
+
+                        <div class="options-list" id="options-list">
+                            <!-- Options -->
+                        </div>
+
+                        <div class="practice-footer"
+                            style="margin-top: 3rem; display: flex; justify-content: space-between;">
+                            <button class="btn btn-outline" id="prevBtn" onclick="prevQuestion()"
+                                disabled>Previous</button>
+                            <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()">Next</button>
+                            <button class="btn btn-primary" id="submitBtn" onclick="finishQuiz()"
+                                style="display: none;">Submit Quiz</button>
+                        </div>
+
+                        <div class="progress-container">
+                            <div class="progress-bar" id="progressBar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" id="end-screen" style="display: none; text-align: center; padding: 4rem 2rem;">
+                    <div id="result-emoji" style="font-size: 4rem; margin-bottom: 1rem;">🏆</div>
+                    <h2 id="result-title">Quiz Completed!</h2>
+                    <div id="result-score"
+                        style="font-size: 4rem; font-weight: 700; color: var(--primary-color); margin: 1rem 0;">0%</div>
+                    <p id="result-stats" style="color: var(--secondary-color); margin-bottom: 2rem;">You answered 0 out
+                        of 0 questions correctly.</p>
+                    <p id="save-status" role="status" aria-live="polite" style="margin-bottom: 1rem;"></p>
+
+                    <div style="display: flex; gap: 1rem; justify-content: center;">
+                        <a href="analytics.html" class="btn btn-outline">View Analytics</a>
+                        <a href="dashboard.html" class="btn btn-primary">Return to Dashboard</a>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script src="../js/dashboard.js"></script>
+    <script>
+        let questions = [];
+        let answers = {};
+        let currentIndex = 0;
+        let timerSeconds = 0;
+        let timerId = null;
+        let quizFinished = false;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            components.load('sidebar-placeholder', '../components/sidebar.html', 'quiz');
+            components.load('topbar-placeholder', '../components/topbar.html');
+
+            try {
+                const materials = await api.getMaterials();
+                const selector = document.getElementById('topicSelector');
+                if (materials.length === 0) {
+                    selector.innerHTML = '<option value="">No topics available</option>';
+                    return;
+                }
+                selector.innerHTML = '<option value="">-- Choose a Topic --</option>' +
+                    materials.map(m => `<option value="${m.id}">${escapeHtml(m.title)}</option>`).join('');
+                const selectedMaterialId = new URLSearchParams(window.location.search).get('materialId');
+                if (selectedMaterialId && materials.some(material => String(material.id) === selectedMaterialId)) {
+                    selector.value = selectedMaterialId;
+                    startQuiz();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        async function startQuiz() {
+            const topicId = document.getElementById('topicSelector').value;
+            if (!topicId) return alert('Select a topic first!');
+
+            try {
+                const data = await api.getMaterialContent(topicId);
+                questions = data.mcqs;
+                if (!questions || questions.length === 0) {
+                    alert('No questions found for this topic.');
+                    return;
+                }
+
+                document.getElementById('setup-screen').style.display = 'none';
+                document.getElementById('quiz-container').style.display = 'block';
+
+                currentIndex = 0;
+                answers = {};
+                quizFinished = false;
+                timerSeconds = questions.length * 60;
+                startTimer();
+                displayQuestion();
+            } catch (err) {
+                alert('Failed to load quiz: ' + err.message);
+            }
+        }
+
+        function startTimer() {
+            if (timerId) clearInterval(timerId);
+            timerId = setInterval(() => {
+                timerSeconds--;
+                if (timerSeconds <= 0) {
+                    clearInterval(timerId);
+                    finishQuiz();
+                    return;
+                }
+                const m = Math.floor(timerSeconds / 60);
+                const s = timerSeconds % 60;
+                document.getElementById('quiz-timer').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+            }, 1000);
+        }
+
+        function displayQuestion() {
+            const q = questions[currentIndex];
+            document.getElementById('quiz-progress-text').innerText = `Question ${currentIndex + 1} of ${questions.length}`;
+            document.getElementById('question-text').innerText = q.question;
+
+            const options = [
+                { k: 'A', v: q.optionA }, { k: 'B', v: q.optionB }, { k: 'C', v: q.optionC }, { k: 'D', v: q.optionD }
+            ];
+
+            document.getElementById('options-list').innerHTML = options.map(opt => `
+                <label class="option-item">
+                    <input type="radio" name="quiz_q" value="${opt.k}" ${answers[currentIndex] === opt.k ? 'checked' : ''} onchange="answers[${currentIndex}] = this.value">
+                    ${escapeHtml(opt.v)}
+                </label>
+            `).join('');
+
+            document.getElementById('prevBtn').disabled = currentIndex === 0;
+            if (currentIndex === questions.length - 1) {
+                document.getElementById('nextBtn').style.display = 'none';
+                document.getElementById('submitBtn').style.display = 'block';
+            } else {
+                document.getElementById('nextBtn').style.display = 'block';
+                document.getElementById('submitBtn').style.display = 'none';
+            }
+
+            document.getElementById('progressBar').style.width = ((currentIndex + 1) / questions.length * 100) + '%';
+        }
+
+        function nextQuestion() {
+            if (currentIndex < questions.length - 1) {
+                currentIndex++;
+                displayQuestion();
+            }
+        }
+
+        function prevQuestion() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                displayQuestion();
+            }
+        }
+
+        async function finishQuiz() {
+            if (quizFinished || !questions.length) return;
+            quizFinished = true;
+            clearInterval(timerId);
+            let correctCount = 0;
+            questions.forEach((q, idx) => {
+                if (answers[idx] === q.correctAnswer) correctCount++;
+            });
+
+            const score = Math.round((correctCount / questions.length) * 100);
+
+            const materialId = document.getElementById('topicSelector').value;
+            try {
+                await api.saveQuizResult(correctCount, questions.length, materialId);
+                document.getElementById('save-status').textContent = 'Your quiz result was saved to history.';
+                document.getElementById('save-status').style.color = '#047857';
+            } catch (err) {
+                document.getElementById('save-status').textContent = `Quiz completed, but the result could not be saved: ${err.message}`;
+                document.getElementById('save-status').style.color = '#b91c1c';
+            }
+
+            document.getElementById('quiz-container').style.display = 'none';
+            document.getElementById('end-screen').style.display = 'block';
+            document.getElementById('result-score').innerText = `${score}%`;
+            document.getElementById('result-stats').innerText = `You answered ${correctCount} out of ${questions.length} questions correctly.`;
+
+            if (score >= 60) {
+                document.getElementById('result-emoji').innerText = '🏆';
+                document.getElementById('result-title').innerText = 'Quiz Passed!';
+                document.getElementById('result-score').style.color = '#10b981';
+            } else {
+                document.getElementById('result-emoji').innerText = '📚';
+                document.getElementById('result-title').innerText = 'Keep Studying!';
+                document.getElementById('result-score').style.color = '#ef4444';
+            }
+        }
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[char]);
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI ExamPrep - Smart Study & MCQ Generator</title>
+    <meta name="description" content="Turn any PDF or Video into Smart Notes & MCQs with AI ExamPrep.">
+    <link rel="stylesheet" href="css/style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div id="navbar-placeholder"></div>
+
+    <main>
+        <section class="hero">
+            <div class="hero-content">
+                <h1>Turn Any PDF or Video into Smart Notes & MCQs</h1>
+                <p>Upload your study materials, and let our AI instantly generate smart notes and practice MCQs tailored
+                    for your success.</p>
+                <div class="hero-buttons">
+                    <a href="register.html" class="btn btn-primary btn-large">Get Started for Free</a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="https://via.placeholder.com/500x300?text=App+Illustration" alt="AI ExamPrep Demo">
+            </div>
+        </section>
+
+        <section id="features" class="features">
+            <div class="feature-card">
+                <div class="icon"></div>
+                <h3>PDF to Notes</h3>
+                <p>Upload PDFs and let AI extract key concepts automatically into well-structured revision notes.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon"></div>
+                <h3>Auto MCQ Generator</h3>
+                <p>Practice with personalized multiple-choice questions matching your exam difficulty dynamically.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon"></div>
+                <h3>Performance Analytics</h3>
+                <p>Track your scores over time and visualize your academic journey with detailed analytics.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon"></div>
+                <h3>AI Weak Topic Detection</h3>
+                <p>Identify your weakest subjects and get targeted recommendations to improve your performance.</p>
+            </div>
+        </section>
+
+        <section id="how-it-works" class="how-it-works">
+            <h2>How It Works</h2>
+            <div class="steps-container">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Upload Content</h3>
+                    <p>Provide a PDF document or a YouTube video link to our AI engine.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>AI Processes</h3>
+                    <p>Our intelligent system analyzes the content to create notes and questions.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Practice & Improve</h3>
+                    <p>Review the notes, take interactive quizzes, and monitor your growth.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="about" class="about">
+            <div class="about-container">
+                <div class="about-content">
+                    <h2>About AI ExamPrep</h2>
+                    <p>AI ExamPrep is a state-of-the-art educational platform designed to empower students and professionals in their exam preparation journeys. By leveraging advanced artificial intelligence, we transform standard study materials like PDFs and videos into highly interactive smart notes and customized multiple-choice questions.</p>
+                    <p>Our mission is to make learning efficient, personalized, and engaging, helping you identify knowledge gaps and master complex subjects with ease.</p>
+                    <div class="about-stats">
+                        <div class="about-stat">
+                            <h4>10k+</h4>
+                            <p>Users Active</p>
+                        </div>
+                        <div class="about-stat">
+                            <h4>500k+</h4>
+                            <p>MCQs Generated</p>
+                        </div>
+                        <div class="about-stat">
+                            <h4>95%</h4>
+                            <p>Success Rate</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="about-image">
+                    <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=600&q=80" alt="About Us Team">
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="footer-placeholder"></div>
+
+    <script src="js/api.js"></script>
+    <script src="js/components.js"></script>
+    <script src="js/script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load components
+            components.load('navbar-placeholder', 'components/navbar.html', 'index');
+            components.load('footer-placeholder', 'components/footer.html');
+        });
+    </script>
+</body>
+
+</html>
